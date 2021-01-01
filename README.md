@@ -1,11 +1,11 @@
 # wstool
-NAME
+## NAME
   wstool - simulate websocket traffic
 
-SYNOPSIS
+## SYNOPSIS
   wstool [OPTIONS ... ] [PATH]
 
-DESCRIPTION
+## DESCRIPTION
   Connect to PATH and display to standard output.
 
   With a FILE, it will read it line by line and send it,
@@ -18,7 +18,7 @@ DESCRIPTION
   -f --file <filepath>
     File to read in
 
-File structure
+#### File structure
 Each line represents a message followed by a rule of when
 to send the next message. They are seperated by whitespace.
 For example:
