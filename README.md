@@ -22,9 +22,11 @@
 Each line represents a message followed by a rule of when
 to send the next message. They are seperated by whitespace.
 For example:
+```
 Hello   10s
 World   W
 !       .
+```
 
 Obviously this has its limitations but is the only
 currently supported mode. Someone is welcome to extend this
