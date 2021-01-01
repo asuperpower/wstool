@@ -1,0 +1,3 @@
+"hello"         2s
+"world"         W
+"!"             E
