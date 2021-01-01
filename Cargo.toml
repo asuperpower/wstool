@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 timespan = "^0"
+chrono = "^0"
 

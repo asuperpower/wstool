@@ -1,12 +1,11 @@
 /* Websocket tooling */
 
-extern crate timespan;
+extern crate chrono;
 
 use std::env;
 use std::fs;
 
 mod file_parser;
-// pub use file_parser;
 
 fn main() {
     let cli_args: Vec<String> = env::args().collect();
@@ -17,7 +16,7 @@ fn main() {
     let contents = fs::read_to_string(input_args.file_name)
         .expect("Unable to read file");
 
-    let ParsedFile = file_parser::WsMessage::new(contents);
+    let ParsedFile = file_parser::WsMessage::new(&contents);
 
     println!("With text: \n{}", contents);
 }
