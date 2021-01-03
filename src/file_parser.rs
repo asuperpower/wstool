@@ -53,7 +53,6 @@ impl WsMessage {
             None => panic!("nothing in array!"),
             Some(cmd_string) => {
                 let command = Command::new(cmd_string, line);
-                println!("Processed message: {} and command: {}", message, cmd_string);
                 WsMessage { message, command }
             }
         }
@@ -72,7 +71,8 @@ fn get_end(string: &String) -> u32
         else if found_whitespace
         {
             // return string position as final msg in idx 
-            return i.try_into().unwrap();
+            // i != string position
+            return (string.len() - i).try_into().unwrap();
         }
     }
     panic!("failed to parse"); // bad software
@@ -98,7 +98,6 @@ impl Command {
                 // Process hms timespan format
                 let command = WaitCommand::WAITTIME;
                 let wait_time = parse(string).unwrap();
-                println!("{}: Parsed time input: {:?}", line, wait_time);
                 // panic!("Unable to parse command at line {}", line);
                 Command { command, wait_time: Some(wait_time) }
             }

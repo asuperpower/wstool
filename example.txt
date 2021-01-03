@@ -1,3 +1,4 @@
-"hello"         2s
-"world"         W
-"!"             E
+hello everyone      in the...           2s
+world                                   W
+this is a test time message             10s
+!                                       E
