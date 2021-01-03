@@ -12,13 +12,21 @@ fn main() {
 
     let input_args =  InputArgs::new(&cli_args);
 
+    println!("Filename: {}, File args: {}, Websocket path: {}",
+        input_args.file_name, input_args.file_args, input_args.websocket_path);
+
     println!("Reading filename {}", input_args.file_name);
     let contents = fs::read_to_string(input_args.file_name)
         .expect("Unable to read file");
 
-    let ParsedFile = file_parser::WsMessage::new(&contents);
-
     println!("With text: \n{}", contents);
+
+    let parsed_file = file_parser::WsMessage::new(&contents);
+
+    for item in parsed_file.iter() {
+        println!("Message: {}", item.message);
+        println!("Command: {}", item.command.command.to_string());
+    }
 }
 
 struct InputArgs {

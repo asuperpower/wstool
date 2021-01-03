@@ -1,59 +1,70 @@
 /* Get the contents of a file and parse it into commands */
-extern crate timespan;
+// extern crate timespan;
 extern crate chrono;
 
-use chrono::NaiveTime;
-use timespan::NaiveTimeSpan;
+// use chrono::NaiveTime;
+// use timespan::NaiveTimeSpan;
+use parse_duration::parse;
+use std::time::Duration;
+use std::convert::TryInto;
+use std::fmt;
 
+#[derive(Debug)]
 pub enum WaitCommand {
     WAITMESSAGE,
     WAITTIME, 
     END
 }
 
-struct Command {
-    command: WaitCommand,
-    wait_time: Option<NaiveTimeSpan>
+pub struct Command {
+    pub command: WaitCommand,
+    pub wait_time: Option<Duration>
 }
 
 pub struct WsMessage {
-    message: String,
-    command: Command
+    pub message: String,
+    pub command: Command
 }
 
 impl WsMessage {
     pub fn new(file_string: &String) -> Vec<WsMessage>
     {
         let string_vector = file_string.lines();
-        return WsMessage::create_from_vector(string_vector.map(str::to_string).collect());
+        return WsMessage::create_from_vector(&string_vector.map(str::to_string).collect());
     }
 
-    fn create_from_vector(cmds: Vec<String>) -> Vec<WsMessage> {
-        let msg_vector = Vec::<WsMessage>::with_capacity(cmds.len());
-        for (x,y) in cmds.enumerate() {
+    fn create_from_vector(cmds: &Vec<String>) -> Vec<WsMessage> {
+        let mut msg_vector = Vec::<WsMessage>::with_capacity(cmds.len());
+        for (i,item) in cmds.into_iter().enumerate() {
             // create a singular msg_cmd
-            let message = WsMessage::create_from_string(x,y);
-            msg_vector .push(message);
+            let message = WsMessage::create_from_string(item,i.try_into().unwrap());
+            msg_vector.push(message);
         }
         return msg_vector;
     }
 
     fn create_from_string(string: &String, line: u32) -> WsMessage {
-        let sv: Vec<&str> = string.split_whitespace();
+        let sv: Vec<String> = string.split_whitespace().map(str::to_string).collect();
         /* x    y --> validate that we have at least the message and command */
-        assert!(sv.le() >= 2, "Unable to parse at line {}", line);
+        assert!(sv.len() >= 2, "Unable to parse at line {}", line);
         let end = get_end(string);
-        let message = string.chars().take(end).collect();
-        let command = Command::new(sv.last(), line);
-        WsMessage { message, command }
+        let message: String = string.chars().take(end.try_into().unwrap()).collect();
+        match sv.last() {
+            None => panic!("nothing in array!"),
+            Some(cmd_string) => {
+                let command = Command::new(cmd_string, line);
+                println!("Processed message: {} and command: {}", message, cmd_string);
+                WsMessage { message, command }
+            }
+        }
     }
 }
 
 /* get end of a in string resembling a  b, */
 fn get_end(string: &String) -> u32
 {
-    let found_whitespace = false;
-    for (c,i) in string.chars().rev() {
+    let mut found_whitespace = false;
+    for (i, c) in string.chars().rev().enumerate() {
         if c.is_whitespace()
         {
             found_whitespace = true;
@@ -61,7 +72,7 @@ fn get_end(string: &String) -> u32
         else if found_whitespace
         {
             // return string position as final msg in idx 
-            return i;
+            return i.try_into().unwrap();
         }
     }
     panic!("failed to parse"); // bad software
@@ -74,7 +85,7 @@ impl Command {
         // can be a time of <x>h<y>m<z>s
         // can be W (wait)
         // can be E (end/finish)
-        match string {
+        match string.as_str() {
             "W" => {
                 let command = WaitCommand::WAITMESSAGE;
                 Command { command, wait_time: None }
@@ -86,11 +97,19 @@ impl Command {
             _ => {
                 // Process hms timespan format
                 let command = WaitCommand::WAITTIME;
-                let wait_time = NaiveTime::parse_from_str(string, "%hh%mm%ss");
-                println!("Parsed time input: {}", wait_time);
+                let wait_time = parse(string).unwrap();
+                println!("{}: Parsed time input: {:?}", line, wait_time);
                 // panic!("Unable to parse command at line {}", line);
                 Command { command, wait_time: Some(wait_time) }
             }
         }
+    }
+}
+
+impl fmt::Display for WaitCommand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        //write!(f, "{:?}", self)
+        // or, alternatively:
+        fmt::Debug::fmt(self, f)
     }
 }
