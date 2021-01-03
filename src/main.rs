@@ -6,6 +6,7 @@ use std::env;
 use std::fs;
 
 mod file_parser;
+mod client;
 
 fn main() {
     let cli_args: Vec<String> = env::args().collect();
@@ -27,6 +28,10 @@ fn main() {
         println!("Message: {}", item.message);
         println!("Command: {}", item.command.command.to_string());
     }
+
+    println!("Starting webscocket messaging!!!");
+    let client = client::Client::new(input_args.websocket_path, parsed_file);
+    client.start();
 }
 
 struct InputArgs {

@@ -1,9 +1,8 @@
 /* Get the contents of a file and parse it into commands */
-// extern crate timespan;
+// pub mod file_parser;
+
 extern crate chrono;
 
-// use chrono::NaiveTime;
-// use timespan::NaiveTimeSpan;
 use parse_duration::parse;
 use std::time::Duration;
 use std::convert::TryInto;
@@ -79,7 +78,7 @@ fn get_end(string: &String) -> u32
 }
 
 impl Command {
-    fn new(string: &String, line: u32) -> Command
+    fn new(string: &String, _line: u32) -> Command
     {
         // parse string into message command
         // can be a time of <x>h<y>m<z>s
