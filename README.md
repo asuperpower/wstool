@@ -28,6 +28,17 @@ World   W
 !       .
 ```
 
-Obviously this has its limitations but is the only
-currently supported mode. Someone is welcome to extend this
-with a command line switch.
+The file supports whitespace in the message as long as it
+is not trailing. This means you could do the following:
+```
+Hello   world!!!  10s
+!                 E
+```
+
+This would send out "Hello   world!!!" on the websocket,
+wait 10 seconds and then send "!".
+
+Obviously this has its limitations (mainly a message cannot
+END with a whitespace) but it is the only currently
+supported mode. Someone is welcome to extend this with a
+command line switch.
