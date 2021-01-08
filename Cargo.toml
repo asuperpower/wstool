@@ -10,4 +10,6 @@ edition = "2018"
 # timespan = "^0"
 chrono = "^0"
 parse_duration = "^0"
-
+websocket = "^0"
+url = "^0"
+scoped_threadpool = "0.1.*"

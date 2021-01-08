@@ -6,19 +6,20 @@ use std::env;
 use std::fs;
 
 mod file_parser;
-mod client;
+mod sender;
 
 fn main() {
     let cli_args: Vec<String> = env::args().collect();
 
-    let input_args =  InputArgs::new(&cli_args);
+    let input_args = InputArgs::new(&cli_args);
 
-    println!("Filename: {}, File args: {}, Websocket path: {}",
-        input_args.file_name, input_args.file_args, input_args.websocket_path);
+    println!(
+        "Filename: {}, File args: {}, Websocket path: {}",
+        input_args.file_name, input_args.file_args, input_args.websocket_path
+    );
 
     println!("Reading filename {}", input_args.file_name);
-    let contents = fs::read_to_string(input_args.file_name)
-        .expect("Unable to read file");
+    let contents = fs::read_to_string(input_args.file_name).expect("Unable to read file");
 
     println!("With text: \n{}", contents);
 
@@ -30,8 +31,9 @@ fn main() {
     }
 
     println!("Starting webscocket messaging!!!");
-    let client = client::Client::new(input_args.websocket_path, parsed_file);
-    client.start();
+    let sender = sender::Sender::new(&input_args.websocket_path, parsed_file);
+    // Intentionally blocking
+    sender.start();
 }
 
 struct InputArgs {
@@ -45,8 +47,11 @@ impl InputArgs {
         let file_name = args[1].clone();
         let file_args = args[2].clone();
         let websocket_path = args[3].clone();
-        
-        InputArgs { file_name, file_args, websocket_path }
+
+        InputArgs {
+            file_name,
+            file_args,
+            websocket_path,
+        }
     }
 }
-
