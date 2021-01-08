@@ -56,6 +56,7 @@ impl Sender {
 
         let tx_1 = tx.clone();
 
+        println!("Spawn send thread");
         let send_loop = thread::spawn(move || {
             loop {
                 // Send loop
@@ -86,9 +87,10 @@ impl Sender {
             }
         });
 
-        let mut pool = Pool::new(2);
+        // let mut pool = Pool::new(2);
 
-        pool.scoped(|scoped| {
+        println!("Spawn receive thread");
+        let receive_loop = thread::spawn(move || {
             // Receive loop
             for message in receiver.incoming_messages() {
                 let message = match message {
@@ -125,7 +127,9 @@ impl Sender {
             }
         });
 
-        block_wait_response = false;
+        // block_wait_response = false;
+
+        println!("Sending items!");
 
         for item in self.send_messages.iter() {
             while block_wait_response {}
@@ -172,7 +176,7 @@ impl Sender {
         // We're exiting
         println!("Waiting for child threads to exit");
         let _ = send_loop.join();
-        // let _ = receive_loop.join(); >> done differently now (using thread pools)
+        let _ = receive_loop.join(); //>> done differently now (using thread pools)
 
         println!("Exited");
     }
