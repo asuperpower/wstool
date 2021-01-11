@@ -1,4 +1,4 @@
-hello everyone      in the...           2s
-world                                   W
-this is a test time message             10s
+Hello                                   2s
+World                                   W
+This is a test time message             10s
 !                                       E

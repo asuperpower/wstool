@@ -1,18 +1,16 @@
 /* really the business logic for our websocket client */
 /* hence, application layer and TIGHTLY coupled to our file parser */
 
-extern crate scoped_threadpool;
 extern crate url;
 extern crate websocket;
 
 use std::sync::mpsc::channel;
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 
 use url::Url;
 use websocket::client::ClientBuilder;
 use websocket::{Message, OwnedMessage};
-
-use scoped_threadpool::Pool; // 0.1.9
 
 use crate::file_parser;
 
@@ -35,8 +33,9 @@ impl Sender {
         /* The websocket bits are lifted from:
          * https://github.com/websockets-rs/rust-websocket */
 
-        // Init
-        let mut block_wait_response = false;
+        // Init condvar
+        let pair = Arc::new((Mutex::new(false), Condvar::new()));
+        let pair2 = Arc::clone(&pair);
 
         // Connect
         println!("Connecting to {}", self.websocket_path);
@@ -87,8 +86,6 @@ impl Sender {
             }
         });
 
-        // let mut pool = Pool::new(2);
-
         println!("Spawn receive thread");
         let receive_loop = thread::spawn(move || {
             // Receive loop
@@ -120,8 +117,12 @@ impl Sender {
                     // Say what we received and unset block wait_receive block
                     _ => {
                         println!("Receive Loop: {:?}", message);
-                        block_wait_response = false;
-                        println!("unblocked...");
+                        let (lock, cvar) = &*pair2;
+                        let mut waiting_recv_response = lock.lock().unwrap();
+                        *waiting_recv_response = false;
+                        // We notify the condvar that the value has changed.
+                        cvar.notify_one();
+                        println!("Unblocking...");
                     }
                 }
             }
@@ -132,8 +133,13 @@ impl Sender {
         println!("Sending items!");
 
         for item in self.send_messages.iter() {
-            while block_wait_response {}
-            println!("sending... {}", item.message);
+            let (lock, cvar) = &*pair;
+            let mut waiting_recv_response = lock.lock().unwrap();
+            while *waiting_recv_response {
+                waiting_recv_response = cvar.wait(waiting_recv_response).unwrap();
+            }
+            cvar.unset();
+            println!("Sending: {}", item.message);
 
             match tx.send(OwnedMessage::Text(item.message.clone())) {
                 Ok(()) => (),
@@ -144,18 +150,23 @@ impl Sender {
             }
             match item.command.command {
                 file_parser::WaitCommand::WAITMESSAGE => {
-                    block_wait_response = true;
-                    println!("blocking...");
+                    println!("Blocking...");
+                    // let (lock, cvar) = &*pair;
+                    let mut waiting_recv_response = lock.lock().unwrap();
+                    println!("Unblocked!");
+                    *waiting_recv_response = true;
+                    /* Release */
+                    cvar.notify_one();
                 }
                 file_parser::WaitCommand::WAITTIME => {
-                    println!("sleeping...");
+                    println!("Sleeping...");
                     match item.command.wait_time {
                         None => panic!("time not defined for time cmd"),
                         Some(time_duration) => thread::sleep(time_duration),
                     }
                 }
                 file_parser::WaitCommand::END => {
-                    println!("closing...");
+                    println!("Closing...");
                     break; // Will close ws after break
                 }
             }
@@ -168,7 +179,7 @@ impl Sender {
             //      Set flag and block until unset by receive
             //  End:
             //      Return from function
-            println!("Sending msg: {}", item.message);
+            // println!("Sending msg: {}", item.message);
         }
         // Close the connection
         let _ = tx.send(OwnedMessage::Close(None));
