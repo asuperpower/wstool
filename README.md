@@ -18,7 +18,10 @@
   -f --file <filepath>
     File to read in
 
-#### File structure
+#### FILE STRUCTURE
+The file functionality allows you to specify a file to use
+to tell wstool what messages to send.
+
 Each line represents a message followed by a rule of when
 to send the next message. They are seperated by whitespace.
 For example:
@@ -42,3 +45,4 @@ Obviously this has its limitations (mainly a message cannot
 END with a whitespace) but it is the only currently
 supported mode. Someone is welcome to extend this with a
 command line switch.
+

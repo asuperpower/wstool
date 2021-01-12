@@ -55,7 +55,6 @@ impl Sender {
 
         let tx_1 = tx.clone();
 
-        println!("Spawn send thread");
         let send_loop = thread::spawn(move || {
             loop {
                 // Send loop
@@ -86,7 +85,6 @@ impl Sender {
             }
         });
 
-        println!("Spawn receive thread");
         let receive_loop = thread::spawn(move || {
             // Receive loop
             for message in receiver.incoming_messages() {
@@ -116,13 +114,15 @@ impl Sender {
                     }
                     // Say what we received and unset block wait_receive block
                     _ => {
-                        println!("Receive Loop: {:?}", message);
+                        println!("Received: {:?}", message);
                         let (lock, cvar) = &*pair2;
                         let mut waiting_recv_response = lock.lock().unwrap();
-                        *waiting_recv_response = false;
-                        // We notify the condvar that the value has changed.
-                        cvar.notify_one();
-                        println!("Unblocking...");
+                        if *waiting_recv_response == true {
+                            *waiting_recv_response = false;
+                            // We notify the condvar that the value has changed.
+                            println!("Unblocking...");
+                            cvar.notify_all();
+                        }
                     }
                 }
             }
@@ -138,9 +138,21 @@ impl Sender {
             while *waiting_recv_response {
                 waiting_recv_response = cvar.wait(waiting_recv_response).unwrap();
             }
-            cvar.unset();
-            println!("Sending: {}", item.message);
+            cvar.notify_all();
 
+            match item.command.command {
+                /* The WAIT message must trigger blocking before the message is sent or
+                there may be a race condition */
+                file_parser::WaitCommand::WAITMESSAGE => {
+                    *waiting_recv_response = true;
+                    /* Release */
+                    cvar.notify_one();
+                }
+                file_parser::WaitCommand::WAITTIME => (),
+                file_parser::WaitCommand::END => (),
+            }
+
+            println!("Sent: {}", item.message);
             match tx.send(OwnedMessage::Text(item.message.clone())) {
                 Ok(()) => (),
                 Err(e) => {
@@ -148,38 +160,20 @@ impl Sender {
                     break;
                 }
             }
+
             match item.command.command {
-                file_parser::WaitCommand::WAITMESSAGE => {
-                    println!("Blocking...");
-                    // let (lock, cvar) = &*pair;
-                    let mut waiting_recv_response = lock.lock().unwrap();
-                    println!("Unblocked!");
-                    *waiting_recv_response = true;
-                    /* Release */
-                    cvar.notify_one();
-                }
-                file_parser::WaitCommand::WAITTIME => {
-                    println!("Sleeping...");
-                    match item.command.wait_time {
-                        None => panic!("time not defined for time cmd"),
-                        Some(time_duration) => thread::sleep(time_duration),
+                file_parser::WaitCommand::WAITMESSAGE => (),
+                file_parser::WaitCommand::WAITTIME => match item.command.wait_time {
+                    None => panic!("time not defined for time cmd"),
+                    Some(time_duration) => {
+                        println!("Sleeping for {:?}", time_duration);
+                        thread::sleep(time_duration);
                     }
-                }
+                },
                 file_parser::WaitCommand::END => {
-                    println!("Closing...");
-                    break; // Will close ws after break
+                    break;
                 }
             }
-
-            // Send item
-            // switch cmd
-            //  Timeout:
-            //      Wait for timeout
-            //  NextMessage:
-            //      Set flag and block until unset by receive
-            //  End:
-            //      Return from function
-            // println!("Sending msg: {}", item.message);
         }
         // Close the connection
         let _ = tx.send(OwnedMessage::Close(None));
