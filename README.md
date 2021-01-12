@@ -46,3 +46,9 @@ END with a whitespace) but it is the only currently
 supported mode. Someone is welcome to extend this with a
 command line switch.
 
+#### HOW TO RUN
+This is in development, so it doesn't quite match the synopsis yet.
+To run, you must clone and then run the following command:
+```
+cargo run example.txt dummy_text ws://echo.websocket.org
+```
